@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { SentryErrorBoundary } from "@/components/error-boundary";
+import { WebVitalsReporter } from "@/components/web-vitals";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -25,18 +27,17 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <head>
           <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         </head>
-        <body className={inter.className}>{children}</body>
+        <body className={inter.className}>
+          <SentryErrorBoundary>{children}</SentryErrorBoundary>
+          <WebVitalsReporter />
+        </body>
       </html>
     </ClerkProvider>
   );
