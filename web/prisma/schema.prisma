@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique @map("clerk_id")
+  email         String?   @unique
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  projects      Project[]
+  parts         GaragePart[]
+  subscription  Subscription?
+  accounts      Account[]
+  sessions      Session[]
+
+  @@map("users")
+}
+
+model Subscription {
+  id                String   @id @default(cuid())
+  userId            String   @unique @map("user_id")
+  stripeCustomerId  String?  @unique @map("stripe_customer_id")
+  stripeSubscriptionId String? @unique @map("stripe_subscription_id")
+  stripePriceId     String?  @map("stripe_price_id")
+  status            String   @default("inactive")
+  tier              String   @default("free") // free, warrior, pro
+  currentPeriodEnd  DateTime? @map("current_period_end")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Project {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  name            String
+  description     String?
+  vehicleType     String   @map("vehicle_type") // small_engine, motorcycle, atv, car, other
+  make            String?
+  model           String?
+  year            Int?
+  vin             String?
+  status          String   @default("acquired") // acquired, in_progress, ready_for_sale, sold, archived
+  
+  // Acquisition
+  buyPrice        Decimal? @map("buy_price") @db.Decimal(10, 2)
+  buyDate         DateTime? @map("buy_date")
+  buySource       String?   @map("buy_source") // marketplace, auction, scrap, gift, other
+  
+  // Sale
+  sellPrice       Decimal? @map("sell_price") @db.Decimal(10, 2)
+  sellDate        DateTime? @map("sell_date")
+  buyer           String?
+  
+  // Financials
+  laborHours      Decimal? @default(0) @map("labor_hours") @db.Decimal(8, 2)
+  hourlyRate      Decimal? @default(25.00) @map("hourly_rate") @db.Decimal(10, 2)
+  otherCosts      Decimal? @default(0) @map("other_costs") @db.Decimal(10, 2)
+  
+  // AI Valuation
+  aiEstimateLow   Decimal? @map("ai_estimate_low") @db.Decimal(10, 2)
+  aiEstimateMid   Decimal? @map("ai_estimate_mid") @db.Decimal(10, 2)
+  aiEstimateHigh  Decimal? @map("ai_estimate_high") @db.Decimal(10, 2)
+  aiConfidence    Int?      @map("ai_confidence") // 0-100
+  
+  // Metadata
+  isPublic        Boolean  @default(false) @map("is_public")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos          ProjectPhoto[]
+  parts           ProjectPart[]
+  timeline        TimelineStep[]
+  costs           ProjectCost[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("projects")
+}
+
+model ProjectPhoto {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  url         String
+  thumbnailUrl String? @map("thumbnail_url")
+  note        String?
+  stepOrder   Int      @map("step_order")
+  stepType    String   @default("disassembly") @map("step_type") // disassembly, assembly, progress
+  takenAt     DateTime @default(now()) @map("taken_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_photos")
+}
+
+model ProjectPart {
+  id            String   @id @default(cuid())
+  projectId     String   @map("project_id")
+  name          String
+  partNumber    String?  @map("part_number")
+  description   String?
+  cost          Decimal? @db.Decimal(10, 2)
+  vendor        String?
+  vendorUrl     String?  @map("vendor_url")
+  status        String   @default("ordered") // ordered, shipped, received, installed, returned
+  orderedAt     DateTime? @map("ordered_at")
+  receivedAt    DateTime? @map("received_at")
+  installedAt   DateTime? @map("installed_at")
+  photoUrl      String?  @map("photo_url")
+  receiptUrl    String?  @map("receipt_url")
+  isFromInventory Boolean @default(false) @map("is_from_inventory")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_parts")
+}
+
+model TimelineStep {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  title       String
+  description String?
+  stepOrder   Int      @map("step_order")
+  stepType    String   @default("disassembly") @map("step_type")
+  photoUrl    String?  @map("photo_url")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("timeline_steps")
+}
+
+model ProjectCost {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  category    String   // parts, labor, tools, supplies, transport, storage, other
+  amount      Decimal  @db.Decimal(10, 2)
+  description String?
+  date        DateTime @default(now())
+  receiptUrl  String?  @map("receipt_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_costs")
+}
+
+model GaragePart {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  name          String
+  partNumber    String?  @map("part_number")
+  description   String?
+  cost          Decimal? @db.Decimal(10, 2)
+  vendor        String?
+  photoUrl      String?  @map("photo_url")
+  tags          String[] // e.g., ["honda", "carburetor", "small_engine"]
+  fromProjectId String?  @map("from_project_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("garage_parts")
+}
