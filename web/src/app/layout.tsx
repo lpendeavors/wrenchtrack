@@ -27,9 +27,19 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const hasValidClerkKey = !!publishableKey && !publishableKey.includes("placeholder");
+
+function Providers({ children }: { children: React.ReactNode }) {
+  if (!hasValidClerkKey) {
+    return <>{children}</>;
+  }
+  return <ClerkProvider>{children}</ClerkProvider>;
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider>
+    <Providers>
       <html lang="en" suppressHydrationWarning>
         <head>
           <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
@@ -39,6 +49,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <WebVitalsReporter />
         </body>
       </html>
-    </ClerkProvider>
+    </Providers>
   );
 }

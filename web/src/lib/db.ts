@@ -1,7 +1,7 @@
 import Dexie, { type Table } from "dexie";
 
 export interface OfflineProject {
-  id?: string;
+  id?: number;
   localId: string;
   userId: string;
   name: string;
@@ -31,7 +31,7 @@ export interface OfflineProject {
 }
 
 export interface OfflineProjectPhoto {
-  id?: string;
+  id?: number;
   localId: string;
   projectLocalId: string;
   file: Blob;
@@ -45,7 +45,7 @@ export interface OfflineProjectPhoto {
 }
 
 export interface OfflineProjectPart {
-  id?: string;
+  id?: number;
   localId: string;
   projectLocalId: string;
   name: string;
@@ -68,8 +68,8 @@ export class WrenchTrackDB extends Dexie {
   photos!: Table<OfflineProjectPhoto>;
   parts!: Table<OfflineProjectPart>;
 
-  constructor() {
-    super("WrenchTrackDB");
+  constructor(dbName = "WrenchTrackDB") {
+    super(dbName);
     this.version(1).stores({
       projects: "++id, localId, userId, status, syncStatus, updatedAt",
       photos: "++id, localId, projectLocalId, stepOrder, syncStatus",

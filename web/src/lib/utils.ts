@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(...inputs));
 }
 
 export function formatCurrency(amount: number | null | undefined): string {
@@ -30,5 +30,12 @@ export function formatDuration(days: number): string {
   const months = Math.floor(days / 30);
   if (months < 12) return `${months} month${months > 1 ? "s" : ""}`;
   const years = Math.floor(days / 365);
+  const remainingMonths = Math.floor((days % 365) / 30);
+  if (years < 1) {
+    return `${months} month${months > 1 ? "s" : ""}`;
+  }
+  if (remainingMonths > 0) {
+    return `${years} year${years > 1 ? "s" : ""} ${remainingMonths} month${remainingMonths > 1 ? "s" : ""}`;
+  }
   return `${years} year${years > 1 ? "s" : ""}`;
 }
