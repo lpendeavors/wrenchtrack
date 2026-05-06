@@ -1,0 +1,82 @@
+name: Legend Claw Quality Gate
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+        if: ${{ hashFiles('package.json') != '' }}
+      - name: Install dependencies
+        run: npm ci
+        if: ${{ hashFiles('package.json') != '' }}
+      - name: Build
+        run: npm run build
+        if: ${{ hashFiles('package.json') != '' }}
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+        if: ${{ hashFiles('package.json') != '' }}
+      - name: Install dependencies
+        run: npm ci
+        if: ${{ hashFiles('package.json') != '' }}
+      - name: Test
+        run: npm test
+        if: ${{ hashFiles('package.json') != '' }}
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+        if: ${{ hashFiles('package.json') != '' }}
+      - name: Install dependencies
+        run: npm ci
+        if: ${{ hashFiles('package.json') != '' }}
+      - name: Lint
+        run: npm run lint
+        if: ${{ hashFiles('package.json') != '' }}
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Security Scan (Semgrep)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        if: ${{ hashFiles('sonar-project.properties') != '' || hashFiles('package.json') != '' }}
