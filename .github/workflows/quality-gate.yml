@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    name: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,10 +23,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
         if: ${{ hashFiles('package.json') != '' }}
-      - name: Build
+      - name: build
         run: npm run build
-        if: ${{ hashFiles('package.json') != '' }}
+        if: ${ hashFiles('package.json') != '' }}
   test:
+    name: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,10 +42,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
         if: ${{ hashFiles('package.json') != '' }}
-      - name: Test
+      - name: test
         run: npm test
-        if: ${{ hashFiles('package.json') != '' }}
+        if: ${ hashFiles('package.json') != '' }}
   lint:
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,10 +61,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
         if: ${{ hashFiles('package.json') != '' }}
-      - name: Lint
+      - name: lint
         run: npm run lint
-        if: ${{ hashFiles('package.json') != '' }}
+        if: ${ hashFiles('package.json') != '' }}
   security:
+    name: security
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
